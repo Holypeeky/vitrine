@@ -1,1 +1,37 @@
+name: Build Vitrine Tweak
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies & Theos
+        run: |
+          brew install ldid xz
+          git clone --recursive https://github.com/theos/theos.git $HOME/theos
+          curl -sL https://github.com/theos/sdks/archive/master.tar.gz | tar -xzf - -C $HOME/theos/sdks --strip-components=1
+
+      - name: Build Tweak
+        env:
+          THEOS: ${{ runner.temp }}/theos
+        run: |
+          export THEOS=$HOME/theos
+          make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless || make package FINALPACKAGE=1
+
+      - name: Upload Compiled Tweak (.deb & .dylib)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Vitrine-Compiled
+          path: |
+            packages/*.deb
+            .theos/obj/**/*.dylib
 
